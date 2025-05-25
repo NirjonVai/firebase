@@ -11,6 +11,25 @@
 
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
   <p id="bonus" class="text-xl text-green-700">Loading bonus...</p>
+
+  <!-- Withdrawal Section -->
+  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
+    <h2 class="text-lg font-semibold mb-2 text-green-800">Withdraw Funds</h2>
+    <input
+      type="number"
+      id="withdrawAmount"
+      placeholder="Enter amount"
+      class="w-full px-3 py-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+    />
+    <button
+      id="withdrawBtn"
+      class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition w-full"
+    >
+      Withdraw
+    </button>
+    <p id="withdrawStatus" class="mt-2 text-sm text-red-600"></p>
+  </div>
+
   <button
     id="logout"
     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
@@ -21,7 +40,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -38,21 +57,55 @@
 
     const bonusText = document.getElementById('bonus');
     const logoutBtn = document.getElementById('logout');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const withdrawAmount = document.getElementById('withdrawAmount');
+    const withdrawStatus = document.getElementById('withdrawStatus');
+
+    let currentUser = null;
+    let currentBonus = 0;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
+        currentUser = user;
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          bonusText.textContent = `Your bonus balance: ${data.bonus || 0} tk`;
+          currentBonus = data.bonus || 0;
+          bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
         } else {
           bonusText.textContent = "No bonus info found.";
         }
       } else {
         window.location.href = "login.html";
       }
+    });
+
+    withdrawBtn.addEventListener('click', async () => {
+      const amount = parseFloat(withdrawAmount.value);
+      withdrawStatus.textContent = "";
+
+      if (isNaN(amount) || amount <= 0) {
+        withdrawStatus.textContent = "Enter a valid amount.";
+        return;
+      }
+
+      if (amount > currentBonus) {
+        withdrawStatus.textContent = "Insufficient balance.";
+        return;
+      }
+
+      const newBalance = currentBonus - amount;
+      const userDoc = doc(db, "users", currentUser.uid);
+      await updateDoc(userDoc, { bonus: newBalance });
+
+      currentBonus = newBalance;
+      bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
+      withdrawAmount.value = "";
+      withdrawStatus.textContent = "Withdrawal successful.";
+      withdrawStatus.classList.remove("text-red-600");
+      withdrawStatus.classList.add("text-green-600");
     });
 
     logoutBtn.addEventListener('click', async () => {
