@@ -29,8 +29,13 @@
         required
         class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <!-- Hidden refer input -->
-      <input type="hidden" id="ref" />
+      <!-- Visible refer input -->
+      <input
+        type="text"
+        id="ref"
+        placeholder="Referral ID (optional)"
+        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
       <button
         type="submit"
         class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
@@ -63,7 +68,7 @@
     const message = document.getElementById('message');
     const refInput = document.getElementById('ref');
 
-    // Capture ref from URL if available
+    // Capture ref from URL if available and show it in the input field
     const urlParams = new URLSearchParams(window.location.search);
     const refUid = urlParams.get('ref');
     if (refUid) {
@@ -74,7 +79,7 @@
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const ref = refInput.value;
+      const ref = refInput.value.trim();
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
