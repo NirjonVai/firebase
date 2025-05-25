@@ -67,7 +67,7 @@
     const message = document.getElementById('message');
     const refInput = document.getElementById('ref');
 
-    // If ref ID in URL, prefill referral input
+    // Prefill referral input if ref ID is in URL
     const urlParams = new URLSearchParams(window.location.search);
     const refUid = urlParams.get('ref');
     if (refUid) {
@@ -84,7 +84,6 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Create user record with bonus and ref info
         await setDoc(doc(db, "users", user.uid), {
           email: email,
           bonus: 50,
@@ -92,7 +91,6 @@
           referredBy: ref || null
         });
 
-        // If referrer UID exists, reward them
         if (ref) {
           const refDoc = doc(db, "users", ref);
           const refSnap = await getDoc(refDoc);
@@ -108,7 +106,7 @@
         message.classList.add("text-green-600");
 
         setTimeout(() => {
-          window.location.href = "dashboard.html";
+          window.location.href = "login.html";
         }, 2000);
 
       } catch (error) {
