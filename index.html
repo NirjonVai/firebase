@@ -2,24 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Firebase Auth - Sign Up & Login</title>
+  <title>Firebase Phone Auth</title>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
+      margin: 30px;
     }
-    input {
-      padding: 8px;
-      margin: 8px 0;
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
       width: 250px;
       display: block;
-    }
-    button {
-      padding: 10px 20px;
-      margin-right: 10px;
-      cursor: pointer;
     }
     #message {
       margin-top: 15px;
@@ -29,19 +24,20 @@
 </head>
 <body>
 
-  <h2>Firebase Authentication</h2>
+  <h2>Firebase Phone Authentication (OTP)</h2>
 
-  <input type="email" id="email" placeholder="Email" />
-  <input type="password" id="password" placeholder="Password (min 6 chars)" />
+  <input id="phoneNumber" type="text" placeholder="+8801XXXXXXXXX" />
+  <button id="sendOtpBtn" onclick="sendOtp()">Send OTP</button>
 
-  <button onclick="signUp()">Sign Up</button>
-  <button onclick="login()">Login</button>
-  <button onclick="logout()">Logout</button>
+  <div id="recaptcha-container"></div>
+
+  <input id="otpCode" type="text" placeholder="Enter OTP" style="display:none;" />
+  <button id="verifyOtpBtn" onclick="verifyOtp()" style="display:none;">Verify OTP</button>
 
   <p id="message"></p>
 
   <script>
-    // Firebase configuration (নিজের প্রজেক্টের তথ্য বসাও)
+    // তোমার Firebase config বসাও এখানে
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
       authDomain: "loginapp-8f48b.firebaseapp.com",
@@ -55,75 +51,77 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    function signUp() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+    let confirmationResult;
 
-      if (!email) {
-        showMessage('Email is required', 'red');
-        return;
-      }
-      if (!password) {
-        showMessage('Password is required', 'red');
-        return;
-      }
-      if (password.length < 6) {
-        showMessage('Password must be at least 6 characters', 'red');
-        return;
-      }
-
-      console.log("Signing up:", email);
-
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          console.log('Sign-up success:', userCredential);
-          showMessage('Sign-up successful! Welcome, ' + userCredential.user.email, 'green');
-        })
-        .catch(error => {
-          console.error('Sign-up error:', error);
-          showMessage(error.message, 'red');
-        });
-    }
-
-    function login() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-
-      if (!email || !password) {
-        showMessage('Please enter email and password', 'red');
-        return;
-      }
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          console.log('Login success:', userCredential);
-          showMessage('Login successful! Welcome back, ' + userCredential.user.email, 'green');
-        })
-        .catch(error => {
-          console.error('Login error:', error);
-          showMessage(error.message, 'red');
-        });
-    }
-
-    function logout() {
-      auth.signOut().then(() => {
-        showMessage('Logged out successfully.', 'black');
-      });
-    }
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        showMessage('Logged in as: ' + user.email, 'green');
-      } else {
-        showMessage('Not logged in.', 'black');
+    // reCAPTCHA verifier
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'invisible',
+      callback: (response) => {
+        // reCAPTCHA solved, allow sendOtp
+        console.log("reCAPTCHA solved");
       }
     });
 
-    function showMessage(msg, color) {
-      const messageElem = document.getElementById('message');
-      messageElem.style.color = color;
-      messageElem.textContent = msg;
+    function showMessage(msg, color='black') {
+      const msgEl = document.getElementById('message');
+      msgEl.style.color = color;
+      msgEl.textContent = msg;
     }
+
+    function sendOtp() {
+      const phoneNumber = document.getElementById('phoneNumber').value.trim();
+
+      if (!phoneNumber) {
+        showMessage('Please enter a phone number with country code (e.g. +8801XXXXXXXXX)', 'red');
+        return;
+      }
+
+      showMessage('Sending OTP...', 'black');
+
+      auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+        .then((result) => {
+          confirmationResult = result;
+          showMessage('OTP sent! Please check your phone.', 'green');
+
+          // Show OTP input and verify button
+          document.getElementById('otpCode').style.display = 'block';
+          document.getElementById('verifyOtpBtn').style.display = 'block';
+        })
+        .catch((error) => {
+          console.error("Error during signInWithPhoneNumber", error);
+          showMessage(error.message, 'red');
+        });
+    }
+
+    function verifyOtp() {
+      const otpCode = document.getElementById('otpCode').value.trim();
+
+      if (!otpCode) {
+        showMessage('Please enter the OTP', 'red');
+        return;
+      }
+
+      confirmationResult.confirm(otpCode)
+        .then((result) => {
+          const user = result.user;
+          showMessage('Phone number verified! Welcome ' + user.phoneNumber, 'green');
+          console.log('User signed in:', user);
+        })
+        .catch((error) => {
+          console.error("OTP verification failed:", error);
+          showMessage('Incorrect OTP, please try again.', 'red');
+        });
+    }
+
+    // Optional: Listen for auth state changes
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        showMessage('Logged in as: ' + (user.phoneNumber || user.email), 'green');
+      } else {
+        showMessage('Not logged in', 'black');
+      }
+    });
   </script>
+
 </body>
 </html>
