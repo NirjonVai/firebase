@@ -32,6 +32,12 @@
     <p id="copyStatus" class="text-sm mt-2 text-green-600"></p>
   </div>
 
+  <!-- Total Referred Users -->
+  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
+    <h2 class="text-lg font-semibold mb-2 text-green-800">Total Referred Users</h2>
+    <p id="referralCount" class="text-xl text-blue-600">Loading...</p>
+  </div>
+
   <!-- Task Section -->
   <div class="bg-white p-6 rounded shadow-md w-80 text-center">
     <h2 class="text-lg font-semibold mb-2 text-green-800">Complete a Task</h2>
@@ -73,7 +79,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, increment, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -98,6 +104,7 @@
     const referLinkInput = document.getElementById('referLink');
     const copyLinkBtn = document.getElementById('copyLink');
     const copyStatus = document.getElementById('copyStatus');
+    const referralCount = document.getElementById('referralCount');
 
     let currentUser = null;
     let currentBonus = 0;
@@ -120,6 +127,11 @@
         } else {
           bonusText.textContent = "No bonus info found.";
         }
+
+        // Get total referred users
+        const q = query(collection(db, "users"), where("referredBy", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        referralCount.textContent = querySnapshot.size;
       } else {
         window.location.href = "login.html";
       }
