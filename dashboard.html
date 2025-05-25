@@ -11,6 +11,7 @@
 
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
   <p id="bonus" class="text-xl text-green-700">Loading bonus...</p>
+  <p id="mainBalance" class="text-xl text-green-700">Loading main balance...</p>
 
   <!-- User Info Section -->
   <div class="bg-white p-6 rounded shadow-md w-80 text-center">
@@ -73,6 +74,7 @@
     const db = getFirestore(app);
 
     const bonusText = document.getElementById('bonus');
+    const mainBalanceText = document.getElementById('mainBalance');
     const logoutBtn = document.getElementById('logout');
     const withdrawBtn = document.getElementById('withdrawBtn');
     const withdrawAmount = document.getElementById('withdrawAmount');
@@ -89,6 +91,7 @@
 
     let currentUser = null;
     let currentBonus = 0;
+    let currentMainBalance = 0;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -102,11 +105,14 @@
         if (docSnap.exists()) {
           const data = docSnap.data();
           currentBonus = data.bonus || 0;
+          currentMainBalance = data.mainBalance || 0;
           bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
+          mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
           userName.textContent = `Username: ${data.username || "N/A"}`;
           userPhone.textContent = `Phone: ${data.phone || "N/A"}`;
         } else {
           bonusText.textContent = "No bonus info found.";
+          mainBalanceText.textContent = "No main balance info found.";
         }
 
         const q = query(collection(db, "users"), where("referredBy", "==", user.uid));
@@ -120,9 +126,18 @@
     completeTaskBtn.addEventListener('click', async () => {
       if (!currentUser) return;
       const userDoc = doc(db, "users", currentUser.uid);
-      await updateDoc(userDoc, { bonus: increment(5) });
+
+      // Increment both bonus and mainBalance by 5 tk on task completion
+      await updateDoc(userDoc, { 
+        bonus: increment(5),
+        mainBalance: increment(5)
+      });
+
       currentBonus += 5;
+      currentMainBalance += 5;
+
       bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
+      mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
       taskStatus.textContent = "Task completed! You earned 5 tk.";
       setTimeout(() => (taskStatus.textContent = ""), 3000);
     });
@@ -138,18 +153,18 @@
         return;
       }
 
-      if (amount > currentBonus) {
-        withdrawStatus.textContent = "Insufficient balance.";
+      if (amount > currentMainBalance) {
+        withdrawStatus.textContent = "Insufficient main balance.";
         withdrawStatus.classList.add("text-red-600");
         return;
       }
 
-      const newBalance = currentBonus - amount;
+      const newMainBalance = currentMainBalance - amount;
       const userDoc = doc(db, "users", currentUser.uid);
-      await updateDoc(userDoc, { bonus: newBalance });
+      await updateDoc(userDoc, { mainBalance: newMainBalance });
 
-      currentBonus = newBalance;
-      bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
+      currentMainBalance = newMainBalance;
+      mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
       withdrawAmount.value = "";
       withdrawStatus.textContent = "Withdrawal successful.";
       withdrawStatus.classList.add("text-green-600");
