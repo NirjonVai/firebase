@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Firebase Sign Up</title>
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
@@ -34,10 +33,10 @@
         Sign Up
       </button>
     </form>
-    <p id="message" class="mt-4 text-center text-sm text-red-500"></p>
+    <p id="message" class="mt-4 text-center text-sm"></p>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK and Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
@@ -64,13 +63,15 @@
 
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-        message.textContent = "Signup successful!";
-        message.classList.remove("text-red-500");
-        message.classList.add("text-green-600");
+        message.textContent = "Signup successful! Redirecting to login...";
+        message.className = "mt-4 text-center text-sm text-green-600";
+
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 1500);
       } catch (error) {
         message.textContent = error.message;
-        message.classList.remove("text-green-600");
-        message.classList.add("text-red-500");
+        message.className = "mt-4 text-center text-sm text-red-500";
       }
     });
   </script>
