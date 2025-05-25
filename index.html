@@ -1,127 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Firebase Phone Auth</title>
-  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-    }
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      width: 250px;
-      display: block;
-    }
-    #message {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Firebase Sign Up</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
 
-  <h2>Firebase Phone Authentication (OTP)</h2>
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-sm">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign Up</h2>
+    <form id="signup-form" class="space-y-4">
+      <input
+        type="email"
+        id="email"
+        placeholder="Email"
+        required
+        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        required
+        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="submit"
+        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+      >
+        Sign Up
+      </button>
+    </form>
+    <p id="message" class="mt-4 text-center text-sm text-red-500"></p>
+  </div>
 
-  <input id="phoneNumber" type="text" placeholder="+8801XXXXXXXXX" />
-  <button id="sendOtpBtn" onclick="sendOtp()">Send OTP</button>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-  <div id="recaptcha-container"></div>
-
-  <input id="otpCode" type="text" placeholder="Enter OTP" style="display:none;" />
-  <button id="verifyOtpBtn" onclick="verifyOtp()" style="display:none;">Verify OTP</button>
-
-  <p id="message"></p>
-
-  <script>
-    // তোমার Firebase config বসাও এখানে
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
       authDomain: "loginapp-8f48b.firebaseapp.com",
       projectId: "loginapp-8f48b",
-      storageBucket: "loginapp-8f48b.appspot.com",
+      storageBucket: "loginapp-8f48b.firebasestorage.app",
       messagingSenderId: "596855828951",
       appId: "1:596855828951:web:ce57dfbed3d6e30baadb92"
     };
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-    let confirmationResult;
+    const form = document.getElementById('signup-form');
+    const message = document.getElementById('message');
 
-    // reCAPTCHA verifier
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      size: 'invisible',
-      callback: (response) => {
-        // reCAPTCHA solved, allow sendOtp
-        console.log("reCAPTCHA solved");
-      }
-    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
 
-    function showMessage(msg, color='black') {
-      const msgEl = document.getElementById('message');
-      msgEl.style.color = color;
-      msgEl.textContent = msg;
-    }
-
-    function sendOtp() {
-      const phoneNumber = document.getElementById('phoneNumber').value.trim();
-
-      if (!phoneNumber) {
-        showMessage('Please enter a phone number with country code (e.g. +8801XXXXXXXXX)', 'red');
-        return;
-      }
-
-      showMessage('Sending OTP...', 'black');
-
-      auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
-        .then((result) => {
-          confirmationResult = result;
-          showMessage('OTP sent! Please check your phone.', 'green');
-
-          // Show OTP input and verify button
-          document.getElementById('otpCode').style.display = 'block';
-          document.getElementById('verifyOtpBtn').style.display = 'block';
-        })
-        .catch((error) => {
-          console.error("Error during signInWithPhoneNumber", error);
-          showMessage(error.message, 'red');
-        });
-    }
-
-    function verifyOtp() {
-      const otpCode = document.getElementById('otpCode').value.trim();
-
-      if (!otpCode) {
-        showMessage('Please enter the OTP', 'red');
-        return;
-      }
-
-      confirmationResult.confirm(otpCode)
-        .then((result) => {
-          const user = result.user;
-          showMessage('Phone number verified! Welcome ' + user.phoneNumber, 'green');
-          console.log('User signed in:', user);
-        })
-        .catch((error) => {
-          console.error("OTP verification failed:", error);
-          showMessage('Incorrect OTP, please try again.', 'red');
-        });
-    }
-
-    // Optional: Listen for auth state changes
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        showMessage('Logged in as: ' + (user.phoneNumber || user.email), 'green');
-      } else {
-        showMessage('Not logged in', 'black');
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        message.textContent = "Signup successful!";
+        message.classList.remove("text-red-500");
+        message.classList.add("text-green-600");
+      } catch (error) {
+        message.textContent = error.message;
+        message.classList.remove("text-green-600");
+        message.classList.add("text-red-500");
       }
     });
   </script>
-
 </body>
 </html>
