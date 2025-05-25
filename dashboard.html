@@ -94,9 +94,7 @@
       if (user) {
         currentUser = user;
         userEmail.textContent = `Email: ${user.email}`;
-
-        const link = `${window.location.origin}/signup.html?ref=${user.uid}`;
-        referLinkInput.value = link;
+        referLinkInput.value = `${window.location.origin}/signup.html?ref=${user.uid}`;
 
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
@@ -105,7 +103,6 @@
           const data = docSnap.data();
           currentBonus = data.bonus || 0;
           bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
-
           userName.textContent = `Username: ${data.username || "N/A"}`;
           userPhone.textContent = `Phone: ${data.phone || "N/A"}`;
         } else {
@@ -133,14 +130,17 @@
     withdrawBtn.addEventListener('click', async () => {
       const amount = parseFloat(withdrawAmount.value);
       withdrawStatus.textContent = "";
+      withdrawStatus.classList.remove("text-green-600", "text-red-600");
 
       if (isNaN(amount) || amount <= 0) {
         withdrawStatus.textContent = "Enter a valid amount.";
+        withdrawStatus.classList.add("text-red-600");
         return;
       }
 
       if (amount > currentBonus) {
         withdrawStatus.textContent = "Insufficient balance.";
+        withdrawStatus.classList.add("text-red-600");
         return;
       }
 
@@ -152,7 +152,6 @@
       bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
       withdrawAmount.value = "";
       withdrawStatus.textContent = "Withdrawal successful.";
-      withdrawStatus.classList.remove("text-red-600");
       withdrawStatus.classList.add("text-green-600");
     });
 
