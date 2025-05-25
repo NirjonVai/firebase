@@ -12,6 +12,19 @@
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
   <p id="bonus" class="text-xl text-green-700">Loading bonus...</p>
 
+  <!-- Task Section -->
+  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
+    <h2 class="text-lg font-semibold mb-2 text-green-800">Complete a Task</h2>
+    <p class="mb-3 text-sm text-gray-600">Click the button below to complete a task and earn 5 tk!</p>
+    <button
+      id="completeTask"
+      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition w-full"
+    >
+      Complete Task
+    </button>
+    <p id="taskStatus" class="mt-2 text-sm text-green-600"></p>
+  </div>
+
   <!-- Withdrawal Section -->
   <div class="bg-white p-6 rounded shadow-md w-80 text-center">
     <h2 class="text-lg font-semibold mb-2 text-green-800">Withdraw Funds</h2>
@@ -40,7 +53,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -60,6 +73,8 @@
     const withdrawBtn = document.getElementById('withdrawBtn');
     const withdrawAmount = document.getElementById('withdrawAmount');
     const withdrawStatus = document.getElementById('withdrawStatus');
+    const completeTaskBtn = document.getElementById('completeTask');
+    const taskStatus = document.getElementById('taskStatus');
 
     let currentUser = null;
     let currentBonus = 0;
@@ -80,6 +95,18 @@
       } else {
         window.location.href = "login.html";
       }
+    });
+
+    completeTaskBtn.addEventListener('click', async () => {
+      if (!currentUser) return;
+      const userDoc = doc(db, "users", currentUser.uid);
+      await updateDoc(userDoc, {
+        bonus: increment(5)
+      });
+      currentBonus += 5;
+      bonusText.textContent = `Your bonus balance: ${currentBonus} tk`;
+      taskStatus.textContent = "Task completed! You earned 5 tk.";
+      setTimeout(() => (taskStatus.textContent = ""), 3000);
     });
 
     withdrawBtn.addEventListener('click', async () => {
