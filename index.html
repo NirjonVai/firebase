@@ -47,7 +47,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -84,6 +84,7 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Create user document
         await setDoc(doc(db, "users", user.uid), {
           email: email,
           bonus: 50,
@@ -91,6 +92,7 @@
           referredBy: ref || null
         });
 
+        // Reward referrer if exists
         if (ref) {
           const refDoc = doc(db, "users", ref);
           const refSnap = await getDoc(refDoc);
@@ -101,7 +103,10 @@
           }
         }
 
-        message.textContent = "Signup successful! You received 50tk bonus.";
+        // Sign out the user after account creation
+        await signOut(auth);
+
+        message.textContent = "Signup successful! You received 50tk bonus. Please login.";
         message.classList.remove("text-red-500");
         message.classList.add("text-green-600");
 
