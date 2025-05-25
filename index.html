@@ -28,6 +28,8 @@
         required
         class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
+      <!-- Hidden refer input -->
+      <input type="hidden" id="ref" />
       <button
         type="submit"
         class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
@@ -41,7 +43,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -58,11 +60,20 @@
 
     const form = document.getElementById('signup-form');
     const message = document.getElementById('message');
+    const refInput = document.getElementById('ref');
+
+    // Capture ref from URL if available
+    const urlParams = new URLSearchParams(window.location.search);
+    const refUid = urlParams.get('ref');
+    if (refUid) {
+      refInput.value = refUid;
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      const ref = refInput.value;
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -71,8 +82,20 @@
         await setDoc(doc(db, "users", user.uid), {
           email: email,
           bonus: 50,
-          role: "user"
+          role: "user",
+          referredBy: ref || null
         });
+
+        // If referral UID is valid, reward the referrer
+        if (ref) {
+          const refDoc = doc(db, "users", ref);
+          const refSnap = await getDoc(refDoc);
+          if (refSnap.exists()) {
+            await updateDoc(refDoc, {
+              bonus: increment(20)
+            });
+          }
+        }
 
         message.textContent = "Signup successful! You received 50tk bonus.";
         message.classList.remove("text-red-500");
