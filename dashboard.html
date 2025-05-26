@@ -11,8 +11,14 @@
 <body class="bg-green-100 h-screen flex flex-col items-center justify-center space-y-6 px-4">
 
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
-  <p id="balance" class="text-xl text-green-700">Loading balance...</p>
-  <p id="referralCount" class="text-lg text-green-600">Loading referral count...</p>
+
+  <div class="space-y-1 text-green-700 text-lg max-w-md w-full">
+    <p><strong>Username:</strong> <span id="username">Loading...</span></p>
+    <p><strong>Phone:</strong> <span id="phone">Loading...</span></p>
+    <p><strong>Email:</strong> <span id="email">Loading...</span></p>
+    <p id="balance" class="text-xl font-semibold">Loading balance...</p>
+    <p id="referralCount" class="text-lg text-green-600">Loading referral count...</p>
+  </div>
 
   <!-- Referral link input with copy button -->
   <div class="flex items-center space-x-2 w-full max-w-md">
@@ -58,6 +64,9 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const usernameSpan = document.getElementById('username');
+    const phoneSpan = document.getElementById('phone');
+    const emailSpan = document.getElementById('email');
     const balanceText = document.getElementById('balance');
     const referralCountText = document.getElementById('referralCount');
     const referralInput = document.getElementById('referralInput');
@@ -71,7 +80,11 @@
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          balanceText.textContent = `Your balance: ${data.balance} tk`;
+
+          usernameSpan.textContent = data.username || "Not set";
+          phoneSpan.textContent = data.phone || "Not set";
+          emailSpan.textContent = data.email || user.email || "Not set";
+          balanceText.textContent = `Your balance: ${data.balance ?? 0} tk`;
 
           // Referral link logic
           const referralCode = user.uid;  // Use current user UID as referral code in referral link
@@ -85,6 +98,9 @@
           referralCountText.textContent = `Your referral count: ${snapshot.data().count}`;
 
         } else {
+          usernameSpan.textContent = "Not found";
+          phoneSpan.textContent = "Not found";
+          emailSpan.textContent = user.email || "Not found";
           balanceText.textContent = "No balance info found.";
           referralInput.value = "";
           referralCountText.textContent = "";
