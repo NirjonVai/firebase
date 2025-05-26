@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
+  <title>Firebase Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
@@ -34,45 +34,53 @@
         Login
       </button>
     </form>
-    <p class="mt-4 text-center text-sm">
-      No account? <a href="signup.html" class="text-blue-600 hover:underline">Sign up here</a>
-    </p>
     <p id="message" class="mt-4 text-center text-sm text-red-500"></p>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
       authDomain: "loginapp-8f48b.firebaseapp.com",
       projectId: "loginapp-8f48b",
-      storageBucket: "loginapp-8f48b.firebasestorage.app",
+      storageBucket: "loginapp-8f48b.appspot.com",
       messagingSenderId: "596855828951",
       appId: "1:596855828951:web:ce57dfbed3d6e30baadb92"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     const form = document.getElementById('login-form');
     const message = document.getElementById('message');
 
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        window.location.href = "dashboard.html";
-      }
-    });
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        window.location.href = "dashboard.html";
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const role = docSnap.data().role || "user"; // default role user if none set
+          if (role === "admin") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "dashboard.html";
+          }
+        } else {
+          message.textContent = "User role not found in Firestore.";
+        }
       } catch (error) {
         message.textContent = error.message;
       }
