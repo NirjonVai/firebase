@@ -13,12 +13,8 @@
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
   <p id="balance" class="text-xl text-green-700">Loading balance...</p>
 
-  <button
-    id="referLinkBtn"
-    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-  >
-    Get Refer Link
-  </button>
+  <!-- Referral Link Section -->
+  <p id="referral" class="text-lg text-green-600 break-all">Loading referral link...</p>
 
   <button
     id="logout"
@@ -26,8 +22,6 @@
   >
     Logout
   </button>
-
-  <p id="referLinkText" class="text-green-700 mt-2 break-words max-w-md text-center"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -48,23 +42,26 @@
     const db = getFirestore(app);
 
     const balanceText = document.getElementById('balance');
+    const referralText = document.getElementById('referral');
     const logoutBtn = document.getElementById('logout');
-    const referLinkBtn = document.getElementById('referLinkBtn');
-    const referLinkText = document.getElementById('referLinkText');
-
-    let currentUser = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        currentUser = user;
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const data = docSnap.data();
           balanceText.textContent = `Your balance: ${data.balance} tk`;
+
+          // Referral link logic
+          // If user has a referralCode stored in their doc, use it; otherwise fallback to uid
+          const referralCode = data.referralCode || user.uid;
+          const referralUrl = `${window.location.origin}/signup.html?ref=${referralCode}`;
+          referralText.innerHTML = `Your referral link: <a href="${referralUrl}" class="text-blue-700 underline">${referralUrl}</a>`;
         } else {
           balanceText.textContent = "No balance info found.";
+          referralText.textContent = "No referral link available.";
         }
       } else {
         // Not logged in - redirect to login page
@@ -75,23 +72,6 @@
     logoutBtn.addEventListener('click', async () => {
       await signOut(auth);
       window.location.href = "login.html";
-    });
-
-    referLinkBtn.addEventListener('click', () => {
-      if (!currentUser) {
-        referLinkText.textContent = "User info not loaded yet.";
-        return;
-      }
-      // Construct referral link
-      const referUrl = `${window.location.origin}/signup.html?ref=${currentUser.uid}`;
-      // Show referral link text
-      referLinkText.textContent = `Your referral link: ${referUrl}`;
-      // Optionally copy to clipboard
-      navigator.clipboard.writeText(referUrl).then(() => {
-        referLinkText.textContent += " (Copied to clipboard!)";
-      }).catch(() => {
-        // If clipboard not supported, just show link
-      });
     });
   </script>
 </body>
