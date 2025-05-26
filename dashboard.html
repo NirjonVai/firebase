@@ -38,24 +38,6 @@
     </button>
   </div>
 
-  <!-- Withdrawal Section -->
-  <div class="w-full max-w-md space-y-3">
-    <h2 class="text-xl font-semibold text-green-800">Withdraw Balance</h2>
-    <input
-      id="withdrawAmount"
-      type="number"
-      placeholder="Enter amount (tk)"
-      class="w-full px-4 py-2 border border-green-600 rounded bg-white focus:outline-none text-green-800"
-    />
-    <button
-      id="withdrawBtn"
-      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition w-full"
-    >
-      Request Withdrawal
-    </button>
-    <p id="withdrawMessage" class="text-center text-sm text-red-700"></p>
-  </div>
-
   <button
     id="logout"
     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
@@ -66,7 +48,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -89,11 +71,6 @@
     const referralInput = document.getElementById('referralInput');
     const copyBtn = document.getElementById('copyBtn');
     const logoutBtn = document.getElementById('logout');
-    const withdrawBtn = document.getElementById('withdrawBtn');
-    const withdrawAmount = document.getElementById('withdrawAmount');
-    const withdrawMessage = document.getElementById('withdrawMessage');
-
-    let currentUserData = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -102,7 +79,6 @@
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          currentUserData = data;
 
           usernameSpan.textContent = data.username || "Not set";
           phoneSpan.textContent = data.phone || "Not set";
@@ -113,10 +89,12 @@
           const referralUrl = `${window.location.origin}/signup.html?ref=${referralCode}`;
           referralInput.value = referralUrl;
 
+          // Count referral users using getDocs instead of getCountFromServer
           const usersCollection = collection(db, "users");
           const q = query(usersCollection, where("referralCode", "==", referralCode));
           const querySnapshot = await getDocs(q);
           referralCountText.textContent = `Your referral count: ${querySnapshot.size}`;
+
         } else {
           usernameSpan.textContent = "Not found";
           phoneSpan.textContent = "Not found";
@@ -143,47 +121,6 @@
         .catch(() => {
           alert('Failed to copy referral link');
         });
-    });
-
-    withdrawBtn.addEventListener('click', async () => {
-      const amount = parseFloat(withdrawAmount.value);
-      withdrawMessage.textContent = '';
-
-      if (isNaN(amount) || amount <= 0) {
-        withdrawMessage.textContent = "Please enter a valid amount.";
-        return;
-      }
-
-      const user = auth.currentUser;
-      if (!user || !currentUserData) {
-        withdrawMessage.textContent = "User not authenticated.";
-        return;
-      }
-
-      const currentBalance = currentUserData.balance ?? 0;
-      if (amount > currentBalance) {
-        withdrawMessage.textContent = "Insufficient balance.";
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "withdrawals"), {
-          userId: user.uid,
-          username: currentUserData.username || "Unknown",
-          phone: currentUserData.phone || "Unknown",
-          amount,
-          status: "pending",
-          requestedAt: serverTimestamp()
-        });
-
-        withdrawMessage.textContent = "Withdrawal request submitted.";
-        withdrawMessage.classList.remove("text-red-700");
-        withdrawMessage.classList.add("text-green-700");
-        withdrawAmount.value = '';
-      } catch (error) {
-        withdrawMessage.textContent = "Failed to submit withdrawal request.";
-        console.error(error);
-      }
     });
 
     logoutBtn.addEventListener('click', async () => {
