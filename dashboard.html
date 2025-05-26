@@ -20,7 +20,6 @@
     <p id="referralCount" class="text-lg text-green-600">Loading referral count...</p>
   </div>
 
-  <!-- Referral link input with copy button -->
   <div class="flex items-center space-x-2 w-full max-w-md">
     <input
       id="referralInput"
@@ -49,7 +48,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -86,16 +85,15 @@
           emailSpan.textContent = data.email || user.email || "Not set";
           balanceText.textContent = `Your balance: ${data.balance ?? 0} tk`;
 
-          // Referral link logic
-          const referralCode = user.uid;  // Use current user UID as referral code in referral link
+          const referralCode = user.uid;
           const referralUrl = `${window.location.origin}/signup.html?ref=${referralCode}`;
           referralInput.value = referralUrl;
 
-          // Query Firestore to count how many users have this user's UID as referralCode
+          // Count referral users using getDocs instead of getCountFromServer
           const usersCollection = collection(db, "users");
           const q = query(usersCollection, where("referralCode", "==", referralCode));
-          const snapshot = await getCountFromServer(q);
-          referralCountText.textContent = `Your referral count: ${snapshot.data().count}`;
+          const querySnapshot = await getDocs(q);
+          referralCountText.textContent = `Your referral count: ${querySnapshot.size}`;
 
         } else {
           usernameSpan.textContent = "Not found";
@@ -106,14 +104,13 @@
           referralCountText.textContent = "";
         }
       } else {
-        // Not logged in - redirect to login page
         window.location.href = "login.html";
       }
     });
 
     copyBtn.addEventListener('click', () => {
       referralInput.select();
-      referralInput.setSelectionRange(0, 99999); // For mobile devices
+      referralInput.setSelectionRange(0, 99999);
       navigator.clipboard.writeText(referralInput.value)
         .then(() => {
           copyBtn.textContent = "Copied!";
