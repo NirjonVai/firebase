@@ -59,6 +59,7 @@
       return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
+    // Get UID by referral code
     async function getUidByRefCode(refCode) {
       const q = query(collection(db, "users"), where("refCode", "==", refCode));
       const querySnapshot = await getDocs(q);
@@ -94,7 +95,7 @@
           if (referredBy) {
             const refDoc = doc(db, "users", referredBy);
             await updateDoc(refDoc, {
-              mainBalance: increment(20) // Give referrer 20tk
+              mainBalance: increment(20) // Referrer gets 20tk
             });
           }
         }
