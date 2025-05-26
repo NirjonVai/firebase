@@ -94,7 +94,7 @@
           if (referredBy) {
             const refDoc = doc(db, "users", referredBy);
             await updateDoc(refDoc, {
-              mainBalance: increment(20)  // Referral bonus
+              mainBalance: increment(20) // Give referrer 20tk
             });
           }
         }
@@ -103,7 +103,7 @@
           username,
           email,
           phone,
-          mainBalance: 50,    // Initial signup bonus
+          mainBalance: 50, // New user gets 50tk
           role: "user",
           refCode: newRefCode,
           referredBy: referredBy || null
