@@ -2,62 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
-<body class="bg-green-100 min-h-screen flex flex-col items-center justify-center space-y-6 py-10">
+<body class="bg-green-100 h-screen flex flex-col items-center justify-center space-y-6">
 
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
-  <p id="mainBalance" class="text-xl text-green-700">Loading main balance...</p>
+  <p id="balance" class="text-xl text-green-700">Loading balance...</p>
 
-  <!-- User Info Section -->
-  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
-    <h2 class="text-lg font-semibold mb-2 text-green-800">Your Info</h2>
-    <p id="userName" class="text-sm text-gray-700">Username: Loading...</p>
-    <p id="userPhone" class="text-sm text-gray-700">Phone: Loading...</p>
-    <p id="userEmail" class="text-sm text-gray-700">Email: Loading...</p>
-  </div>
-
-  <!-- Refer Link Section -->
-  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
-    <h2 class="text-lg font-semibold mb-2 text-green-800">Your Refer Link</h2>
-    <div class="flex items-center justify-between space-x-2">
-      <input id="referLink" class="w-full px-2 py-1 border rounded text-sm" readonly />
-      <button id="copyLink" class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 text-sm">Copy</button>
-    </div>
-    <p id="copyStatus" class="text-sm mt-2 text-green-600"></p>
-  </div>
-
-  <!-- Total Referred Users -->
-  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
-    <h2 class="text-lg font-semibold mb-2 text-green-800">Total Referred Users</h2>
-    <p id="referralCount" class="text-xl text-blue-600">Loading...</p>
-  </div>
-
-  <!-- Task Section -->
-  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
-    <h2 class="text-lg font-semibold mb-2 text-green-800">Complete a Task</h2>
-    <p class="mb-3 text-sm text-gray-600">Click the button below to complete a task and earn 5 tk!</p>
-    <button id="completeTask" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition w-full">Complete Task</button>
-    <p id="taskStatus" class="mt-2 text-sm text-green-600"></p>
-  </div>
-
-  <!-- Withdrawal Section -->
-  <div class="bg-white p-6 rounded shadow-md w-80 text-center">
-    <h2 class="text-lg font-semibold mb-2 text-green-800">Withdraw Funds</h2>
-    <input type="number" id="withdrawAmount" placeholder="Enter amount" class="w-full px-3 py-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-400"/>
-    <button id="withdrawBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition w-full">Withdraw</button>
-    <p id="withdrawStatus" class="mt-2 text-sm text-red-600"></p>
-  </div>
-
-  <button id="logout" class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">Logout</button>
+  <button
+    id="logout"
+    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
+  >
+    Logout
+  </button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, increment, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -72,100 +38,24 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const mainBalanceText = document.getElementById('mainBalance');
+    const balanceText = document.getElementById('balance');
     const logoutBtn = document.getElementById('logout');
-    const withdrawBtn = document.getElementById('withdrawBtn');
-    const withdrawAmount = document.getElementById('withdrawAmount');
-    const withdrawStatus = document.getElementById('withdrawStatus');
-    const completeTaskBtn = document.getElementById('completeTask');
-    const taskStatus = document.getElementById('taskStatus');
-    const referLinkInput = document.getElementById('referLink');
-    const copyLinkBtn = document.getElementById('copyLink');
-    const copyStatus = document.getElementById('copyStatus');
-    const referralCount = document.getElementById('referralCount');
-    const userName = document.getElementById('userName');
-    const userPhone = document.getElementById('userPhone');
-    const userEmail = document.getElementById('userEmail');
-
-    let currentUser = null;
-    let currentMainBalance = 0;
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-        return;
-      }
+      if (user) {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
 
-      currentUser = user;
-      userEmail.textContent = `Email: ${user.email}`;
-      referLinkInput.value = `${window.location.origin}/signup.html?ref=${user.uid}`;
-
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const data = userDocSnap.data();
-        currentMainBalance = data.mainBalance || 0;
-        mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
-        userName.textContent = `Username: ${data.username || "N/A"}`;
-        userPhone.textContent = `Phone: ${data.phone || "N/A"}`;
-
-        const userRefCode = data.refCode || user.uid;
-
-        const q = query(collection(db, "users"), where("referredBy", "==", userRefCode));
-        const querySnapshot = await getDocs(q);
-        referralCount.textContent = querySnapshot.size;
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          balanceText.textContent = `Your balance: ${data.balance} tk`;
+        } else {
+          balanceText.textContent = "No balance info found.";
+        }
       } else {
-        mainBalanceText.textContent = "No main balance info found.";
+        // Not logged in - redirect to login page
+        window.location.href = "login.html";
       }
-    });
-
-    completeTaskBtn.addEventListener('click', async () => {
-      if (!currentUser) return;
-      const userDoc = doc(db, "users", currentUser.uid);
-
-      await updateDoc(userDoc, {
-        mainBalance: increment(5)
-      });
-
-      currentMainBalance += 5;
-      mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
-      taskStatus.textContent = "Task completed! You earned 5 tk.";
-      setTimeout(() => (taskStatus.textContent = ""), 3000);
-    });
-
-    withdrawBtn.addEventListener('click', async () => {
-      const amount = parseFloat(withdrawAmount.value);
-      withdrawStatus.textContent = "";
-      withdrawStatus.classList.remove("text-green-600", "text-red-600");
-
-      if (isNaN(amount) || amount <= 0) {
-        withdrawStatus.textContent = "Enter a valid amount.";
-        withdrawStatus.classList.add("text-red-600");
-        return;
-      }
-
-      if (amount > currentMainBalance) {
-        withdrawStatus.textContent = "Insufficient main balance.";
-        withdrawStatus.classList.add("text-red-600");
-        return;
-      }
-
-      const newMainBalance = currentMainBalance - amount;
-      const userDoc = doc(db, "users", currentUser.uid);
-      await updateDoc(userDoc, { mainBalance: newMainBalance });
-
-      currentMainBalance = newMainBalance;
-      mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
-      withdrawAmount.value = "";
-      withdrawStatus.textContent = "Withdrawal successful.";
-      withdrawStatus.classList.add("text-green-600");
-    });
-
-    copyLinkBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(referLinkInput.value);
-      copyStatus.textContent = "Referral link copied!";
-      setTimeout(() => (copyStatus.textContent = ""), 2000);
     });
 
     logoutBtn.addEventListener('click', async () => {
