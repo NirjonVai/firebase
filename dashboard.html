@@ -12,6 +12,7 @@
 
   <h1 class="text-3xl font-bold text-green-800">Welcome to your Dashboard!</h1>
   <p id="balance" class="text-xl text-green-700">Loading balance...</p>
+  <p id="referralCount" class="text-lg text-green-600">Loading referral count...</p>
 
   <!-- Referral link input with copy button -->
   <div class="flex items-center space-x-2 w-full max-w-md">
@@ -42,7 +43,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -58,6 +59,7 @@
     const db = getFirestore(app);
 
     const balanceText = document.getElementById('balance');
+    const referralCountText = document.getElementById('referralCount');
     const referralInput = document.getElementById('referralInput');
     const copyBtn = document.getElementById('copyBtn');
     const logoutBtn = document.getElementById('logout');
@@ -72,12 +74,20 @@
           balanceText.textContent = `Your balance: ${data.balance} tk`;
 
           // Referral link logic
-          const referralCode = data.referralCode || user.uid;
+          const referralCode = user.uid;  // Use current user UID as referral code in referral link
           const referralUrl = `${window.location.origin}/signup.html?ref=${referralCode}`;
           referralInput.value = referralUrl;
+
+          // Query Firestore to count how many users have this user's UID as referralCode
+          const usersCollection = collection(db, "users");
+          const q = query(usersCollection, where("referralCode", "==", referralCode));
+          const snapshot = await getCountFromServer(q);
+          referralCountText.textContent = `Your referral count: ${snapshot.data().count}`;
+
         } else {
           balanceText.textContent = "No balance info found.";
           referralInput.value = "";
+          referralCountText.textContent = "";
         }
       } else {
         // Not logged in - redirect to login page
@@ -90,7 +100,6 @@
       referralInput.setSelectionRange(0, 99999); // For mobile devices
       navigator.clipboard.writeText(referralInput.value)
         .then(() => {
-          // Optional: show a quick confirmation
           copyBtn.textContent = "Copied!";
           setTimeout(() => {
             copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Copy</span>';
