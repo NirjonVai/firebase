@@ -16,6 +16,13 @@
     <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign Up</h2>
     <form id="signup-form" class="space-y-4">
       <input
+        type="text"
+        id="referral"
+        placeholder="Referral ID"
+        readonly
+        class="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
+      />
+      <input
         type="email"
         id="email"
         placeholder="Email"
@@ -44,7 +51,6 @@
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
       authDomain: "loginapp-8f48b.firebaseapp.com",
@@ -54,33 +60,43 @@
       appId: "1:596855828951:web:ce57dfbed3d6e30baadb92"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     const form = document.getElementById('signup-form');
     const message = document.getElementById('message');
+    const referralInput = document.getElementById('referral');
+
+    // Get referral code from URL query param 'ref' and set it in input
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      referralInput.value = refCode;
+    } else {
+      referralInput.value = "No referral code";
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      const referral = referralInput.value === "No referral code" ? null : referralInput.value;
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Add user data to Firestore with signup bonus as balance
+        // Save user data with balance and referral code (if any)
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
-          balance: 50  // sign-up bonus directly added to main balance
+          balance: 50,  // sign-up bonus
+          referralCode: referral
         });
 
         message.textContent = "Signup successful! 50tk bonus added to your balance.";
         message.className = "text-green-600 text-center";
 
-        // Redirect after 2 seconds
         setTimeout(() => {
           window.location.href = "dashboard.html";
         }, 2000);
