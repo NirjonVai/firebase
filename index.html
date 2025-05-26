@@ -1,131 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Firebase Sign Up</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase Sign Up</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
 
-  <div class="bg-white p-8 rounded shadow-md w-full max-w-sm">
-    <a href="login.html" class="block text-center text-black text-2xl font-bold mb-6">Login here</a>
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign Up</h2>
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-sm">
+    <a href="login.html" class="block text-center text-blue-700 text-lg font-semibold mb-4 hover:underline">Already have an account? Login</a>
 
-    <form id="signup-form" class="space-y-4">
-      <input type="text" id="username" placeholder="Username" required class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <input type="email" id="email" placeholder="Email" required class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <input type="password" id="password" placeholder="Password" required class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <input type="text" id="phone" placeholder="Phone Number" required class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <input type="text" id="ref" placeholder="Referral Code (optional)" class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Sign Up</button>
-    </form>
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Sign Up</h2>
+    <form id="signup-form" class="space-y-4">
+      <input
+        type="email"
+        id="email"
+        placeholder="Email"
+        required
+        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        required
+        class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="submit"
+        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+      >
+        Sign Up
+      </button>
+    </form>
+    <p id="message" class="mt-4 text-center text-sm"></p>
+  </div>
 
-    <p id="message" class="mt-4 text-center text-sm text-red-500"></p>
-  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, updateDoc, increment, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
+      authDomain: "loginapp-8f48b.firebaseapp.com",
+      projectId: "loginapp-8f48b",
+      storageBucket: "loginapp-8f48b.appspot.com",
+      messagingSenderId: "596855828951",
+      appId: "1:596855828951:web:ce57dfbed3d6e30baadb92"
+    };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
-      authDomain: "loginapp-8f48b.firebaseapp.com",
-      projectId: "loginapp-8f48b",
-      storageBucket: "loginapp-8f48b.firebasestorage.app",
-      messagingSenderId: "596855828951",
-      appId: "1:596855828951:web:ce57dfbed3d6e30baadb92"
-    };
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const form = document.getElementById('signup-form');
+    const message = document.getElementById('message');
 
-    const form = document.getElementById('signup-form');
-    const message = document.getElementById('message');
-    const refInput = document.getElementById('ref');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
 
-    // Prefill referral input from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCodeFromUrl = urlParams.get('ref');
-    if (refCodeFromUrl) {
-      refInput.value = refCodeFromUrl;
-    }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-    // Generate 6-character referral code
-    function generateRefCode() {
-      return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
+        // Add user data to Firestore with signup bonus as balance
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          balance: 50  // sign-up bonus directly added to main balance
+        });
 
-    // Get UID by referral code
-    async function getUidByRefCode(refCode) {
-      const q = query(collection(db, "users"), where("refCode", "==", refCode));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        return querySnapshot.docs[0].id;
-      }
-      return null;
-    }
+        message.textContent = "Signup successful! 50tk bonus added to your balance.";
+        message.className = "text-green-600 text-center";
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const username = document.getElementById('username').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const phone = document.getElementById('phone').value.trim();
-      const refCodeInput = refInput.value.trim().toUpperCase();
-
-      if (!username || !email || !password || !phone) {
-        message.textContent = "All fields except referral are required.";
-        return;
-      }
-
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const newRefCode = generateRefCode();
-
-        let referredBy = null;
-
-        if (refCodeInput) {
-          referredBy = await getUidByRefCode(refCodeInput);
-          if (referredBy) {
-            const refDoc = doc(db, "users", referredBy);
-            await updateDoc(refDoc, {
-              mainBalance: increment(20) // Referrer gets 20tk
-            });
-          }
-        }
-
-        await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
-          phone,
-          mainBalance: 50, // New user gets 50tk
-          role: "user",
-          refCode: newRefCode,
-          referredBy: referredBy || null
-        });
-
-        await signOut(auth);
-
-        message.textContent = "Signup successful! You received 50tk main balance. Please login.";
-        message.classList.remove("text-red-500");
-        message.classList.add("text-green-600");
-
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 2000);
-
-      } catch (error) {
-        message.textContent = error.message;
-        message.classList.remove("text-green-600");
-        message.classList.add("text-red-500");
-      }
-    });
-  </script>
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 2000);
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = "text-red-500 text-center";
+      }
+    });
+  </script>
 </body>
 </html>
