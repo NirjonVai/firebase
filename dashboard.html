@@ -39,15 +39,6 @@
     </button>
   </div>
 
-  <!-- Withdraw Button -->
-  <button
-    id="withdrawBtn"
-    class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 transition"
-  >
-    Withdraw
-  </button>
-
-  <!-- Logout Button -->
   <button
     id="logout"
     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
@@ -58,7 +49,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getCountFromServer, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB0j9F_ywrwAN74TSvM90FQzkhNCntGsQs",
@@ -81,30 +72,26 @@
     const referralInput = document.getElementById('referralInput');
     const copyBtn = document.getElementById('copyBtn');
     const logoutBtn = document.getElementById('logout');
-    const withdrawBtn = document.getElementById('withdrawBtn');
-
-    let currentUser = null;
-    let currentUserData = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        currentUser = user;
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          currentUserData = data;
 
           usernameSpan.textContent = data.username || "Not set";
           phoneSpan.textContent = data.phone || "Not set";
           emailSpan.textContent = data.email || user.email || "Not set";
           balanceText.textContent = `Your balance: ${data.balance ?? 0} tk`;
 
-          const referralCode = user.uid;
+          // Referral link logic
+          const referralCode = user.uid;  // Use current user UID as referral code in referral link
           const referralUrl = `${window.location.origin}/signup.html?ref=${referralCode}`;
           referralInput.value = referralUrl;
 
+          // Query Firestore to count how many users have this user's UID as referralCode
           const usersCollection = collection(db, "users");
           const q = query(usersCollection, where("referralCode", "==", referralCode));
           const snapshot = await getCountFromServer(q);
@@ -119,13 +106,14 @@
           referralCountText.textContent = "";
         }
       } else {
+        // Not logged in - redirect to login page
         window.location.href = "login.html";
       }
     });
 
     copyBtn.addEventListener('click', () => {
       referralInput.select();
-      referralInput.setSelectionRange(0, 99999);
+      referralInput.setSelectionRange(0, 99999); // For mobile devices
       navigator.clipboard.writeText(referralInput.value)
         .then(() => {
           copyBtn.textContent = "Copied!";
@@ -141,32 +129,6 @@
     logoutBtn.addEventListener('click', async () => {
       await signOut(auth);
       window.location.href = "login.html";
-    });
-
-    withdrawBtn.addEventListener('click', async () => {
-      if (!currentUser || !currentUserData) return;
-
-      const { balance, username, phone } = currentUserData;
-      if (balance < 1) {
-        alert("You must have at least 1 tk to withdraw.");
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "withdrawals"), {
-          uid: currentUser.uid,
-          username: username || "",
-          phone: phone || "",
-          amount: balance,
-          status: "pending",
-          createdAt: new Date()
-        });
-
-        alert("Withdrawal request submitted.");
-      } catch (error) {
-        console.error("Withdrawal error:", error);
-        alert("Failed to submit withdrawal request.");
-      }
     });
   </script>
 </body>
