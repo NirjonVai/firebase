@@ -91,29 +91,32 @@
     let currentMainBalance = 0;
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        userEmail.textContent = `Email: ${user.email}`;
-        referLinkInput.value = `${window.location.origin}/signup.html?ref=${user.uid}`;
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
 
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+      currentUser = user;
+      userEmail.textContent = `Email: ${user.email}`;
+      referLinkInput.value = `${window.location.origin}/signup.html?ref=${user.uid}`;
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          currentMainBalance = data.mainBalance || 0;
-          mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
-          userName.textContent = `Username: ${data.username || "N/A"}`;
-          userPhone.textContent = `Phone: ${data.phone || "N/A"}`;
-        } else {
-          mainBalanceText.textContent = "No main balance info found.";
-        }
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
 
-        const q = query(collection(db, "users"), where("referredBy", "==", user.uid));
+      if (userDocSnap.exists()) {
+        const data = userDocSnap.data();
+        currentMainBalance = data.mainBalance || 0;
+        mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
+        userName.textContent = `Username: ${data.username || "N/A"}`;
+        userPhone.textContent = `Phone: ${data.phone || "N/A"}`;
+
+        const userRefCode = data.refCode || user.uid;
+
+        const q = query(collection(db, "users"), where("referredBy", "==", userRefCode));
         const querySnapshot = await getDocs(q);
         referralCount.textContent = querySnapshot.size;
       } else {
-        window.location.href = "login.html";
+        mainBalanceText.textContent = "No main balance info found.";
       }
     });
 
@@ -121,13 +124,11 @@
       if (!currentUser) return;
       const userDoc = doc(db, "users", currentUser.uid);
 
-      // Increment mainBalance by 5 tk on task completion
-      await updateDoc(userDoc, { 
+      await updateDoc(userDoc, {
         mainBalance: increment(5)
       });
 
       currentMainBalance += 5;
-
       mainBalanceText.textContent = `Your main balance: ${currentMainBalance} tk`;
       taskStatus.textContent = "Task completed! You earned 5 tk.";
       setTimeout(() => (taskStatus.textContent = ""), 3000);
