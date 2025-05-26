@@ -77,12 +77,12 @@
           balance: 50  // sign-up bonus directly added to main balance
         });
 
-        message.textContent = "Signup successful! 50tk bonus added to your balance.";
+        message.textContent = "Signup successful! 50tk bonus added to your balance. Please login.";
         message.className = "text-green-600 text-center";
 
-        // Redirect after 2 seconds
+        // Redirect to login page after 2 seconds
         setTimeout(() => {
-          window.location.href = "dashboard.html";
+          window.location.href = "login.html";
         }, 2000);
       } catch (error) {
         message.textContent = error.message;
