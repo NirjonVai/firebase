@@ -106,13 +106,14 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Add new user document with username, phone, 50tk bonus + referralCode field
+        // Add new user document with username, phone, 50tk bonus + referralCode + role
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
           username: username,
           phone: phone,
           balance: 50,
-          referralCode: referral
+          referralCode: referral,
+          role: "user"
         });
 
         // If referral code exists, update the referrer's balance by +20 tk
