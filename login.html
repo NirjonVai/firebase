@@ -5,14 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Firebase Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
 
   <div class="bg-white p-8 rounded shadow-md w-full max-w-sm">
-    <a href="index.html" class="block text-center text-blue-700 text-lg font-semibold mb-4 hover:underline">Create a new account? Sign-up</a>
+    <a href="signup.html" class="block text-center text-blue-700 text-lg font-semibold mb-4 hover:underline">
+      Create a new account? Sign-up
+    </a>
     <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
+    
     <form id="login-form" class="space-y-4">
       <input
         type="email"
@@ -67,6 +69,7 @@
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
 
@@ -78,7 +81,7 @@
             window.location.href = "dashboard.html";
           }
         } else {
-          message.textContent = "User role not found in Firestore.";
+          message.textContent = "User data not found in Firestore.";
         }
       } catch (error) {
         message.textContent = error.message;
